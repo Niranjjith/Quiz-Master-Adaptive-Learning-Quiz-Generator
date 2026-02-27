@@ -1,0 +1,9 @@
+question,option_a,option_b,option_c,option_d,answer,topic,accuracy_rate,avg_time
+What is 2+2?,3,4,5,6,B,Math,0.95,3
+What is 10/2?,2,3,5,6,C,Math,0.80,5
+Capital of France?,Berlin,Madrid,Paris,Rome,C,Geography,0.90,4
+Largest planet?,Earth,Mars,Jupiter,Saturn,C,Science,0.70,6
+What is 5*6?,11,30,25,35,B,Math,0.60,7
+H2O is?,Oxygen,Hydrogen,Water,Helium,C,Science,0.85,4
+Fastest land animal?,Cheetah,Lion,Tiger,Horse,A,Science,0.75,5
+Square root of 81?,7,8,9,10,C,Math,0.65,6
