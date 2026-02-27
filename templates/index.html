@@ -178,11 +178,19 @@
                 <div class="question-header px-4 px-md-5 py-4 py-md-4">
                   <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
+                      {% if not finished %}
                       <span class="badge-soft mb-2">Question</span>
                       <h1 class="h4 mb-0">Answer the question below</h1>
                       <p class="text-muted mb-0">
                         Each answer dynamically adjusts the next question to your skill level.
                       </p>
+                      {% else %}
+                      <span class="badge-soft mb-2">Results</span>
+                      <h1 class="h4 mb-0">Quiz complete</h1>
+                      <p class="text-muted mb-0">
+                        You have answered all 10 questions. Review your performance below.
+                      </p>
+                      {% endif %}
                     </div>
                     <div class="difficulty-pill d-flex align-items-center">
                       {% set label = "Easy" if difficulty == 0 else "Medium" if difficulty == 1 else "Hard" %}
@@ -207,6 +215,7 @@
                   {% endif %}
                   {% endwith %}
 
+                  {% if not finished %}
                   <p class="lead mb-4">{{ question.question }}</p>
 
                   <form action="{{ url_for('submit') }}" method="post" class="mt-2">
@@ -275,6 +284,26 @@
                       </button>
                     </div>
                   </form>
+                  {% else %}
+                  <div class="text-center">
+                    <p class="lead mb-2">
+                      You answered
+                      <strong>{{ correct_answers }}</strong>
+                      out of
+                      <strong>{{ total_questions }}</strong>
+                      questions correctly.
+                    </p>
+                    <p class="mb-4">
+                      Final accuracy:
+                      <strong>{{ (accuracy * 100) | round(0) }}%</strong>
+                    </p>
+                    <form action="{{ url_for('restart') }}" method="post">
+                      <button type="submit" class="btn submit-btn">
+                        Restart Quiz
+                      </button>
+                    </form>
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -284,9 +313,14 @@
                 <div class="metric-card p-3 p-md-4">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="metric-label">Session Overview</span>
-                    <span class="badge-soft">Live</span>
+                    {% if finished %}
+                    <span class="badge-soft">Result</span>
+                    {% else %}
+                    <span class="badge-soft">In progress</span>
+                    {% endif %}
                   </div>
-                  <div class="row g-3">
+                  {% if finished %}
+                  <div class="row g-3 mt-1">
                     <div class="col-6">
                       <div>
                         <div class="metric-sub mb-1">Accuracy</div>
@@ -313,7 +347,18 @@
                         <div class="metric-value">{{ difficulty }}</div>
                       </div>
                     </div>
+                    <div class="col-12">
+                      <div class="mt-2">
+                        <div class="metric-sub mb-1">Accuracy Level</div>
+                        <div class="metric-value">{{ accuracy_level }}</div>
+                      </div>
+                    </div>
                   </div>
+                  {% else %}
+                  <p class="metric-sub mb-0">
+                    Answer all 10 questions to see your final accuracy and level.
+                  </p>
+                  {% endif %}
                 </div>
 
                 <div class="metric-card p-3 p-md-4">

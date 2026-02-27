@@ -15,6 +15,18 @@ cluster = DifficultyClustering()
 questions_df = cluster.fit(df)
 
 
+def pick_unique_question(difficulty, used_ids):
+    df_local = questions_df
+    subset = df_local[df_local["difficulty"] == difficulty]
+    if used_ids:
+        subset = subset[~subset.index.isin(used_ids)]
+    if subset.empty:
+        subset = df_local[~df_local.index.isin(used_ids)]
+    if subset.empty:
+        return None
+    return subset.sample(1).iloc[0]
+
+
 def get_user_model():
     data = session.get("user_model")
     user = UserModel()
@@ -36,9 +48,41 @@ def save_user_model(user: UserModel):
 @app.route("/", methods=["GET"])
 def index():
     user = get_user_model()
-    difficulty = user.current_difficulty
+    finished = session.get("finished", False)
+    question_count = session.get("question_count", 0)
+    used_ids = session.get("used_question_ids", [])
 
-    question = select_question(questions_df, difficulty)
+    accuracy = user.accuracy()
+    if accuracy >= 0.8:
+        accuracy_level = "Excellent"
+    elif accuracy >= 0.5:
+        accuracy_level = "Good"
+    elif accuracy > 0:
+        accuracy_level = "Needs Improvement"
+    else:
+        accuracy_level = "Not enough data"
+
+    if finished:
+        return render_template(
+            "index.html",
+            finished=True,
+            question=None,
+            difficulty=user.current_difficulty,
+            accuracy=accuracy,
+            accuracy_level=accuracy_level,
+            total_questions=min(question_count, 10),
+            correct_answers=user.correct_answers,
+        )
+
+    difficulty = user.current_difficulty
+    question = pick_unique_question(difficulty, used_ids)
+    if question is None:
+        session["finished"] = True
+        return redirect(url_for("index"))
+
+    qid = int(question.name)
+    used_ids.append(qid)
+    session["used_question_ids"] = used_ids
     question_dict = {
         "question": question["question"],
         "option_a": question["option_a"],
@@ -49,14 +93,14 @@ def index():
     }
     session["current_question"] = question_dict
 
-    accuracy = user.accuracy()
-
     return render_template(
         "index.html",
+        finished=False,
         question=question_dict,
         difficulty=difficulty,
         accuracy=accuracy,
-        total_questions=user.total_questions,
+        accuracy_level=accuracy_level,
+        total_questions=question_count,
         correct_answers=user.correct_answers,
     )
 
@@ -75,6 +119,9 @@ def submit():
     correct = check_answer(selected, current_question["answer"])
     user.update(correct)
 
+    question_count = session.get("question_count", 0) + 1
+    session["question_count"] = question_count
+
     if correct:
         flash("Correct! Great job.", "success")
     else:
@@ -83,5 +130,14 @@ def submit():
     user.adjust_difficulty()
     save_user_model(user)
 
+    if question_count >= 10:
+        session["finished"] = True
+
+    return redirect(url_for("index"))
+
+
+@app.route("/restart", methods=["POST"])
+def restart():
+    session.clear()
     return redirect(url_for("index"))
 
